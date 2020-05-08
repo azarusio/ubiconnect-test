@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Demo Integration Ubisoft Connect V3</title>
+    <script
+      src="https://ubistatic2-a.akamaihd.net/uplay-connect/v3/prod/default/sdk/connectSdkPublic.js"
+      type="text/javascript"
+    ></script>
+  </head>
+  <body>
+    <div id="modal" style="display: none;" onClick="closeModal()">
+      <table height="100%" width="100%">
+        <tr>
+          <td valign="middle" align="center">
+            <iframe
+              id="loginiframe"
+              class="modaliframe"
+              style="width: 480px; height: 720px;"
+            ></iframe>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <button id="loginButton" style="display: none;" onClick="signIn()">
+      Sign In
+    </button>
+    <div id="userInfos" style="display: none;">
+      <img id="avatar" style="zoom: 30%;" src="" />
+      <span id="username">Username</span>
+      <button onclick="logOut()">Log Out</button>
+    </div>
+    <p id="loadingText">Loading...</p>
+  </body>
+  <script type="text/javascript">
+    // Behaviour of this page when used in a callback (so wihtin the iFrame after user login) : refresh parent
+    // This isn't the only way to do. You can also use a callback page to do this.
+    if (window.self != window.top) {
+      window.top.location.href = window.top.location.href;
+    }
+  </script>
+  <script type="text/javascript">
+    var myAppId = "c384082c-e6f1-4c83-b4c0-b496b5af67aa";
+    var myGenomeId = "ee40148c-ed71-45d8-8e1c-44e82a3ffe9d";
+    //var myNextUrl = location.href;
+    var myNextUrl = "https://api-stage-nano.azarus.io/auth/ubiconnect/callback";
+    var connectSDK;
+
+    document.addEventListener("DOMContentLoaded", function (event) {
+      console.log("DOMContentLoaded");
+      
+      Connect.init({
+        env: "UAT",
+        //env: "PROD",
+        appId: myAppId,
+        genomeId: myGenomeId,
+        lang: "en-US",
+        nextUrl: encodeURIComponent(myNextUrl),
+        thirdPartyCookiesSupport: false,
+      });
+
+      Connect.sdk.subscribe(function (sdk) {
+        console.log("SDK = ", sdk);
+        connectSDK = sdk; // It is needed to save the sdk as a variable if you needto call the sdk later outside of this callback
+        connectSDK.getTicket().subscribe(function (getTicketResponse) {
+          console.log("getTicketResponse = ", getTicketResponse);
+          if (getTicketResponse.status === "ok") {
+            var ticketData = getTicketResponse.payload;
+            connectSDK
+              .getProfiles(
+                ticketData.ticket,
+                ticketData.sessionId,
+                ticketData.userId
+              )
+              .subscribe(function (getProfilesResponse) {
+                console.log("getProfilesResponse = ", getProfilesResponse);
+                document.getElementById("loadingText").style.display = "none";
+                document.getElementById("avatar").src =
+                  "https://uat-ubisoft-avatars.akamaized.net/" +
+                  ticketData.userId +
+                  "/default_146_146.png?appId=" +
+                  myAppId;
+                document.getElementById("username").innerHTML =
+                  getProfilesResponse.pa;
+                yload.profiles[0].nameOnPlatform;
+                document.getElementById("userInfos").style.display = "block";
+              });
+          } else {
+            document.getElementById("loadingText").style.display = "none";
+            document.getElementById("loginButton").style.display = "block";
+            document.getElementById("loginiframe").src =
+              "https://uat-connect.ubisoft.com/login?appId=" +
+              myAppId +
+              "&genomeId=" +
+              myGenomeId +
+              "&lang=en-US&nextUrl=" +
+              encodeURIComponent(myNextUrl);
+          }
+        });
+      });
+    });
+
+    function signIn() {
+      document.getElementById("loadingText").style.display = "none";
+      document.getElementById("modal").style.display = "block";
+    }
+
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+
+    function logOut() {
+      document.getElementById("userInfos").style.display = "none";
+      document.getElementById("loadingText").style.display = "block";
+      connectSDK.getTicket().subscribe(function (getTicketResponse) {
+        if (getTicketResponse.status === "ok") {
+          connectSDK
+            .logout(
+              getTicketResponse.payload.ticket,
+              getTicketResponse.payload.sessionId
+            )
+            .subscribe(function (s) {
+              location.reload();
+            });
+        } else {
+          location.reload();
+        }
+      });
+    }
+
+  </script>
+  <style>
+    #modal {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      z-index: 10;
+      background: rgba(50, 50, 50, 0.7);
+    }
+    .modaliframe {
+      user-select: none;
+      border: 0;
+      -moz-box-shadow: 2px 2px 15px 0px #343434;
+      -webkit-box-shadow: 2px 2px 15px 0px #343434;
+      -o-box-shadow: 2px 2px 15px 0px #343434;
+      box-shadow: 2px 2px 15px 0px #343434;
+    }
+  </style>
+</html>
