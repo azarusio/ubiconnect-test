@@ -23,14 +23,45 @@
         </tr>
       </table>
     </div>
-    <button id="loginButton" style="display: none;" onClick="signIn()">
-      Sign In
-    </button>
+
+    <div id="loginPanel">
+      <form onchange="onFormChange()">
+        <div>
+          <label for="authServer">
+            Authentication server
+          </label>
+          <input type="text" id="authServer" />
+        </div>
+        <div>
+          <label for="appId">
+            App ID
+          </label>
+          <input type="text" id="appId" />
+        </div>
+        <div>
+          <label for="genomeId">
+            Genome ID
+          </label>
+          <input type="text" id="genomeId" />
+        </div>
+        <div>
+          <label for="nextUrl">
+            Next URL
+          </label>
+          <input type="text" id="nextUrl" />
+        </div>
+      </form>
+      <button onClick="signIn()">
+        Sign In
+      </button>
+    </div>
+
     <div id="userInfos" style="display: none;">
       <img id="avatar" style="zoom: 30%;" src="" />
       <span id="username">Username</span>
       <button onclick="logOut()">Log Out</button>
     </div>
+
     <p id="loadingText">Loading...</p>
   </body>
   <script type="text/javascript">
@@ -41,15 +72,36 @@
     }
   </script>
   <script type="text/javascript">
+    var authenticated = false;
+    var myServer = "https://uat-connect.ubisoft.com";
     var myAppId = "c384082c-e6f1-4c83-b4c0-b496b5af67aa";
     var myGenomeId = "ee40148c-ed71-45d8-8e1c-44e82a3ffe9d";
-    //var myNextUrl = location.href;
+    //var myNextUrl = "azarus.ubi.com";
     var myNextUrl = "https://api-stage-nano.azarus.io/auth/ubiconnect/callback";
     var connectSDK;
+    render();
+
+    document.getElementById("loadingText").style.display = "block";
+    document.getElementById(
+      "loginiframe"
+    ).src = `${myServer}/login?appId=${myAppId}&genomeId=${myGenomeId}&lang=en-US&nextUrl=${encodeURIComponent(
+      myNextUrl
+    )}`;
 
     document.addEventListener("DOMContentLoaded", function (event) {
-      console.log("DOMContentLoaded");
-      
+      console.log("=== DOMContentLoaded");
+
+      window.addEventListener("message", (event) => {
+        console.log("message:", event);
+        if (
+          (window.location.hostname === "localhost" ||
+            /\.azarus\.io/g.test(event.origin)) &&
+          event.data.action === "reload"
+        ) {
+          window.location.reload();
+        }
+      });
+
       Connect.init({
         env: "UAT",
         //env: "PROD",
@@ -57,15 +109,18 @@
         genomeId: myGenomeId,
         lang: "en-US",
         nextUrl: encodeURIComponent(myNextUrl),
-        thirdPartyCookiesSupport: false,
+        thirdPartyCookiesSupport: true,
       });
+      console.log("=== Connect initialized");
 
       Connect.sdk.subscribe(function (sdk) {
-        console.log("SDK = ", sdk);
+        console.log("!!! SDK = ", sdk);
         connectSDK = sdk; // It is needed to save the sdk as a variable if you needto call the sdk later outside of this callback
         connectSDK.getTicket().subscribe(function (getTicketResponse) {
           console.log("getTicketResponse = ", getTicketResponse);
           if (getTicketResponse.status === "ok") {
+            authorized = true;
+            render();
             var ticketData = getTicketResponse.payload;
             connectSDK
               .getProfiles(
@@ -82,23 +137,16 @@
                   "/default_146_146.png?appId=" +
                   myAppId;
                 document.getElementById("username").innerHTML =
-                  getProfilesResponse.pa;
-                yload.profiles[0].nameOnPlatform;
+                  getProfilesResponse.payload.profiles[0].nameOnPlatform;
                 document.getElementById("userInfos").style.display = "block";
               });
           } else {
-            document.getElementById("loadingText").style.display = "none";
-            document.getElementById("loginButton").style.display = "block";
-            document.getElementById("loginiframe").src =
-              "https://uat-connect.ubisoft.com/login?appId=" +
-              myAppId +
-              "&genomeId=" +
-              myGenomeId +
-              "&lang=en-US&nextUrl=" +
-              encodeURIComponent(myNextUrl);
+            authorized = false;
+            render();
           }
         });
       });
+      console.log("=== SDK subscribed");
     });
 
     function signIn() {
@@ -123,12 +171,37 @@
             .subscribe(function (s) {
               location.reload();
             });
+          authorized = false;
+          render();
         } else {
           location.reload();
         }
       });
     }
 
+    function render() {
+      document.getElementById("loginPanel").style.display = !authenticated
+        ? "block"
+        : "none";
+      document.getElementById("userInfos").style.display = authenticated
+        ? "block"
+        : "none";
+      if (!authenticated) {
+        document.getElementById("authServer").value = myServer;
+        document.getElementById("appId").value = myAppId;
+        document.getElementById("genomeId").value = myGenomeId;
+        document.getElementById("nextUrl").value = myNextUrl;
+      }
+      if (authenticated) {
+      }
+    }
+
+    function onFormChange() {
+      myServer = document.getElementById("authServer").value;
+      myAppId = document.getElementById("appId").value;
+      myGenomeId = document.getElementById("genomeId").value;
+      myNextUrl = document.getElementById("nextUrl").value;
+    }
   </script>
   <style>
     #modal {
@@ -147,6 +220,19 @@
       -webkit-box-shadow: 2px 2px 15px 0px #343434;
       -o-box-shadow: 2px 2px 15px 0px #343434;
       box-shadow: 2px 2px 15px 0px #343434;
+    }
+
+    #loginPanel > div {
+      margin: 8px;
+    }
+
+    #loginPanel label {
+      min-width: 150px;
+      display: inline-block;
+    }
+
+    #loginPanel input {
+      min-width: 300px;
     }
   </style>
 </html>
