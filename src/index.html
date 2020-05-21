@@ -109,12 +109,11 @@
         genomeId: myGenomeId,
         lang: "en-US",
         nextUrl: encodeURIComponent(myNextUrl),
-        thirdPartyCookiesSupport: true,
+        thirdPartyCookiesSupport: false,
       });
       console.log("=== Connect initialized");
-
       Connect.sdk.subscribe(function (sdk) {
-        console.log("!!! SDK = ", sdk);
+        console.log("%c === GOT SDK:", 'color: green; font-weight: bold;', sdk);
         connectSDK = sdk; // It is needed to save the sdk as a variable if you needto call the sdk later outside of this callback
         connectSDK.getTicket().subscribe(function (getTicketResponse) {
           console.log("getTicketResponse = ", getTicketResponse);
