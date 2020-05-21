@@ -76,7 +76,6 @@
     var myServer = "https://uat-connect.ubisoft.com";
     var myAppId = "c384082c-e6f1-4c83-b4c0-b496b5af67aa";
     var myGenomeId = "ee40148c-ed71-45d8-8e1c-44e82a3ffe9d";
-    //var myNextUrl = "azarus.ubi.com";
     var myNextUrl = "https://api-stage-nano.azarus.io/auth/ubiconnect/callback";
     var connectSDK;
     render();
@@ -104,7 +103,6 @@
 
       Connect.init({
         env: "UAT",
-        //env: "PROD",
         appId: myAppId,
         genomeId: myGenomeId,
         lang: "en-US",
@@ -112,6 +110,8 @@
         thirdPartyCookiesSupport: false,
       });
       console.log("=== Connect initialized");
+
+      // Here is the problem place. Subscription callback never gets called.
       Connect.sdk.subscribe(function (sdk) {
         console.log("%c === GOT SDK:", 'color: green; font-weight: bold;', sdk);
         connectSDK = sdk; // It is needed to save the sdk as a variable if you needto call the sdk later outside of this callback
